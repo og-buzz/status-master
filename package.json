@@ -1,0 +1,14 @@
+{
+  "name": "status-master",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Central source for employee status: reads Microsoft Teams presence via Graph and drives an MQTT stack light.",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "login": "node src/login.ts",
+    "start": "node src/run.ts",
+    "once": "node src/run.ts --once",
+    "test": "node --test 'test/**/*.test.ts'"
+  }
+}

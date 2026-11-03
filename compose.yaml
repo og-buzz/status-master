@@ -1,0 +1,20 @@
+# docker compose up -d --build (scripts/deploy.sh does this on the host)
+# Needs next to this file: .env (see .env.example) and data/token.json from `npm run login` (mode 600).
+services:
+  status-master:
+    build: .
+    image: status-master:latest
+    container_name: status-master
+    restart: unless-stopped
+    # Host networking: the MQTT broker runs on the same host.
+    network_mode: host
+    env_file: .env
+    # Set TZ in .env for local times in the log.
+    environment:
+      TOKEN_FILE: /data/token.json
+    # Run as the owner of ./data so token refreshes can be written (set both in .env; default 1000).
+    user: "${STATUS_MASTER_UID:-1000}:${STATUS_MASTER_GID:-1000}"
+    volumes:
+      - ./data:/data
+    # A clean stop (docker stop sends SIGTERM) leaves the light on LIGHT_STALE; then the Last Will covers crashes.
+    stop_grace_period: 10s
