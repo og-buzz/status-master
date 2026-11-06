@@ -124,14 +124,20 @@ person's light commands (`LIGHT_*` in `.env`) to one topic (`LIGHT_TOPIC`), and 
 because its `role=` on the SD card makes the same topic. A second person needs a second container, sign-in and
 `.env`. The plan turns that around, so status-master knows people and each light knows its owner and its look:
 
-1. **Lights carry their owner and look** (ClearCoreStackLight): `owner=<UPN>` and `light_<state>=<command>` in
-   `settings.ini`, one per state (`available`, `busy`, `call`, `dnd`, `away`, `brb`, `offline`, `unknown`, `stale`),
-   with built-in defaults. The light subscribes to its owner's presence topic and keeps its `.../command` topic for
-   tests and overrides. A look changes with `set light_busy ...` on the USB console or by editing the card; a new
-   desk is a flashed board and a written card, with no change on the server.
-2. **status-master publishes states, not commands**: a retained state name per person on
-   `<prefix>/presence/<UPN>`, and its own online/offline topic (with the Last Will), which the lights watch to show
-   `light_stale`. `LIGHT_*` and `LIGHT_TOPIC` leave `.env`; during the switch it can publish both.
+1. **Lights carry their owner and look** (ClearCoreStackLight 2.5, done): `owner=` and `presence=` make a light
+   follow `<presence>/<owner>`; `scene_<state>=<command>` on its SD card is the look for each state (`available`,
+   `busy`, `call`, `dnd`, `away`, `brb`, `offline`, `unknown`, `stale`), with built-in defaults; `PIX[a-b]` picks out
+   physical pixels; `<presence>/publisher` going offline shows the `stale` scene. `.../command` stays for tests and
+   overrides; `.../scene` plays a scene by name; `.../config` (`allow_config=true`) writes scenes over MQTT.
+2. **status-master publishes states, not commands.** Task, in order:
+   - [ ] Publish each person's state name, retained, on `<presence>/<UPN>`, and `online`/`offline` on
+     `<presence>/publisher` with that as the Last Will. Keep publishing `LIGHT_*` to `LIGHT_TOPIC` meanwhile.
+   - [ ] Move today's looks onto the light as scenes (`scene_available`, `scene_busy`, ...; the status pixels are
+     `PIX[11-12]`): a **Save as scene for state** action in stacklight-console that writes the composed command over
+     USB, and later the Studio over `.../config`.
+   - [ ] Set `owner=` and `presence=` on the light and check each Teams state shows its scene, and `stale` when
+     status-master stops.
+   - [ ] Drop `LIGHT_*` and `LIGHT_TOPIC` from `.env`; per-state looks are edited on the light from then on.
 3. **Many people from one instance**: Graph access to other people's presence, either application permissions
    (`Presence.Read.All`, `User.Read.All`, admin consent) or delegated `Presence.Read.All` on one account if the
    tenant's consent policy allows it; the people come from a list or a group, UPNs resolved to Graph user ids.
