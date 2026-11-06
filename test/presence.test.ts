@@ -18,10 +18,19 @@ test('toState maps every Graph availability, and unknown values to unknown', () 
   assert.equal(toState('BusyIdle'), 'busy');
   assert.equal(toState('DoNotDisturb'), 'dnd');
   assert.equal(toState('Away'), 'away');
-  assert.equal(toState('BeRightBack'), 'away');
+  assert.equal(toState('BeRightBack'), 'brb');
   assert.equal(toState('Offline'), 'offline');
   assert.equal(toState('PresenceUnknown'), 'unknown');
   assert.equal(toState('SomethingNew'), 'unknown');
+});
+
+test('toState: a busy person in a call is call; Do not disturb wins', () => {
+  assert.equal(toState('Busy', 'InACall'), 'call');
+  assert.equal(toState('BusyIdle', 'InAConferenceCall'), 'call');
+  assert.equal(toState('Busy', 'InAMeeting'), 'busy');
+  assert.equal(toState('Busy', 'Busy'), 'busy');
+  assert.equal(toState('DoNotDisturb', 'InACall'), 'dnd');
+  assert.equal(toState('Available', 'InACall'), 'available');
 });
 
 test('plainMessage strips Teams HTML and entities', () => {
@@ -40,12 +49,12 @@ test('first poll reports everyone; people missing from the response are unknown'
 });
 
 test('no change when nothing moved; since holds while the state holds', () => {
-  const first = applyPoll(new Map(), [ann], [pres('id-ann', 'Busy', 'InACall')], 1000);
-  const same = applyPoll(first.statuses, [ann], [pres('id-ann', 'Busy', 'InACall')], 2000);
+  const first = applyPoll(new Map(), [ann], [pres('id-ann', 'Busy', 'InAMeeting')], 1000);
+  const same = applyPoll(first.statuses, [ann], [pres('id-ann', 'Busy', 'InAMeeting')], 2000);
   assert.equal(same.changes.length, 0);
 
   // Activity change within the same state is reported, but since stays.
-  const activity = applyPoll(same.statuses, [ann], [pres('id-ann', 'BusyIdle', 'InAMeeting')], 3000);
+  const activity = applyPoll(same.statuses, [ann], [pres('id-ann', 'BusyIdle', 'Busy')], 3000);
   assert.equal(activity.changes.length, 1);
   assert.equal(activity.statuses.get('id-ann')?.since, 1000);
 
@@ -71,4 +80,14 @@ test('out-of-office and status message changes are reported', () => {
   assert.equal(ooo.changes.length, 1);
   assert.equal(ooo.changes[0].after.outOfOffice, true);
   assert.equal(ooo.changes[0].after.message, 'On leave');
+});
+
+test('picking up a call changes the state to call, and hanging up back to busy', () => {
+  const meeting = applyPoll(new Map(), [ann], [pres('id-ann', 'Busy', 'InAMeeting')], 1000);
+  const call = applyPoll(meeting.statuses, [ann], [pres('id-ann', 'Busy', 'InACall')], 2000);
+  assert.equal(call.changes[0].before?.state, 'busy');
+  assert.equal(call.changes[0].after.state, 'call');
+  assert.equal(call.statuses.get('id-ann')?.since, 2000);
+  const after = applyPoll(call.statuses, [ann], [pres('id-ann', 'Busy', 'Busy')], 3000);
+  assert.equal(after.changes[0].after.state, 'busy');
 });

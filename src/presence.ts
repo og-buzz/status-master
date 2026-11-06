@@ -23,7 +23,7 @@ export interface GraphPresence {
 }
 
 /** Coarse status, one per stack-light state. */
-export type State = 'available' | 'busy' | 'dnd' | 'away' | 'offline' | 'unknown';
+export type State = 'available' | 'busy' | 'call' | 'dnd' | 'away' | 'brb' | 'offline' | 'unknown';
 
 export interface Person {
   id: string;
@@ -51,12 +51,17 @@ const STATES: Record<string, State> = {
   BusyIdle: 'busy',
   DoNotDisturb: 'dnd',
   Away: 'away',
-  BeRightBack: 'away',
+  BeRightBack: 'brb',
   Offline: 'offline',
 };
 
-export function toState(availability: string): State {
-  return STATES[availability] ?? 'unknown';
+/** Graph activities of a Teams call in progress (they show once the call is answered; ringing has none). */
+const CALL_ACTIVITIES = new Set(['InACall', 'InAConferenceCall']);
+
+/** The coarse state. A busy person in a call is `call`; Do not disturb stays `dnd` whatever the activity. */
+export function toState(availability: string, activity?: string): State {
+  const state = STATES[availability] ?? 'unknown';
+  return state === 'busy' && activity !== undefined && CALL_ACTIVITIES.has(activity) ? 'call' : state;
 }
 
 /** Teams status messages are HTML fragments. Reduce one to a single line of text. */
@@ -98,12 +103,13 @@ export function applyPoll(
     const p = byId.get(person.id);
     const before = previous.get(person.id);
     const availability = p?.availability ?? 'PresenceUnknown';
-    const state = toState(availability);
+    const activity = p?.activity ?? 'PresenceUnknown';
+    const state = toState(availability, activity);
     const after: Status = {
       person,
       state,
       availability,
-      activity: p?.activity ?? 'PresenceUnknown',
+      activity,
       outOfOffice: p?.outOfOfficeSettings?.isOutOfOffice ?? false,
       message: plainMessage(p?.statusMessage?.message?.content),
       since: before && before.state === state ? before.since : now,
