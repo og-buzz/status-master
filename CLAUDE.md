@@ -25,6 +25,6 @@ Read `README.md` first.
   it (2.3 format, without the strip effects so far).
 - Deploy with `scripts/deploy.sh` (Docker on the broker host, `DEPLOY_HOST` in `.env`); never copy `.token.json`
   over a host's newer one.
-- **Git:** hosted on GitHub only, [og-buzz/status-master](https://github.com/og-buzz/status-master) (public); no
-  GitLab project. Keep host names, topics, tenant/client ids and people out of tracked files: they belong in `.env`.
-  Commit or push only when asked.
+- **Git:** hosted on GitHub, [og-buzz/status-master](https://github.com/og-buzz/status-master) (public), and pushed
+  to GitLab `ctms/labs/status-master` as the second remote `gitlab`; keep both on the same commit. Keep host names,
+  topics, tenant/client ids and people out of tracked files: they belong in `.env`. Commit or push only when asked.

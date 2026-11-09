@@ -100,6 +100,10 @@ LIGHT_DND=IO4=RAMP,50,100,1250MS;STRIP=0,0,0,3,0;STRIP[12]=RAMP,2/0/0,6/0/0,1250
 Pixel numbers are positions along the light's `strip_layout`, so they may change when the strip is installed in
 a new shape.
 
+Changes between looks are drawn by the light: from ClearCoreStackLight 2.7 it fades into each new look over about
+2 s, sweeping along the strip with sparkles in the new colour (`transition` and `transition_sparkle` in its
+`settings.ini`). status-master just publishes the new command.
+
 ## Deployment
 
 status-master runs as a Docker container next to the MQTT broker (`compose.yaml`: host networking, restarts by
